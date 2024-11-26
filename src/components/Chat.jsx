@@ -1,6 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import image from '../assets/robot.png';
+import image from "../assets/robot.png";
+import Prism from "prismjs"; // Bibliothèque pour la coloration syntaxique
+import "prismjs/themes/prism.css"; // Style de Prism.js
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-java";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-markup"; // Pour HTML
+
+
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [response, setResponse] = useState("");
@@ -12,59 +21,60 @@ const Chat = () => {
     setLoading(true); // Affiche le statut de chargement
     setError(""); // Réinitialise l'erreur
     setResponse(""); // Efface la réponse précédente
-  
+
     try {
       const res = await axios.post("https://api-wz4n.onrender.com/send/message", {
         message,
       });
-      console.log(res)
-  
-      // Vérifie si la requête a réussi
+
       if (res.status === 200 && res.data && res.data.response) {
-        setResponse(res.data.response); // Stocke la réponse retournée par l'API
+        // Formatage des blocs de code pour Prism.js
+        const formattedResponse = res.data.response
+          .replace(/```(\w+)/g, '<pre><code class="language-$1">') // Détecte la langue (e.g., ```javascript)
+          .replace(/```/g, "</code></pre>"); // Remplace les balises de fin de code
+        setResponse(formattedResponse); // Stocke la réponse formatée
       } else {
         setError("La réponse de l'API est invalide ou incomplète.");
       }
     } catch (err) {
-      // Gère les erreurs réseau ou les réponses avec un status >= 400
       if (err.response) {
-        // L'API a répondu avec un status d'erreur (ex: 4xx ou 5xx)
         setError(`Erreur de l'API : ${err.response.status} ${err.response.statusText}`);
       } else if (err.request) {
-        // Aucun retour de l'API (erreur réseau)
         setError("Aucune réponse de l'API. Vérifiez votre connexion réseau.");
       } else {
-        // Erreur inattendue
         setError("Une erreur inconnue s'est produite. Veuillez réessayer.");
       }
     } finally {
       setLoading(false); // Désactive le statut de chargement
     }
   };
-  
+
+  // Applique la coloration syntaxique à chaque mise à jour de la réponse
+  useEffect(() => {
+    Prism.highlightAll();
+  }, [response]);
 
   return (
     <div className="container mt-5">
-      {/* <h1 className="text-center mb-4">Vient discutez avec moi !!!</h1> */}
       <center>
-      <img  src={image} alt="img" width={100} />
-       </center>
+        <img src={image} alt="img" width={100} />
+      </center>
       <form onSubmit={handleSubmit}>
         <div className="mb-3 mt-2">
           <input
             type="text"
             id="messageInput"
             className="form-control"
-            placeholder=" Posez votre question ici..."
+            placeholder="Posez votre question ici..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             required
           />
         </div>
         <center>
-        <button type="submit" className="btn btn-primary w-50">
-          Envoyer
-        </button>
+          <button type="submit" className="btn btn-primary w-50">
+            Envoyer
+          </button>
         </center>
       </form>
 
@@ -75,13 +85,12 @@ const Chat = () => {
           <div
             className="shadow-lg p-3 mb-5 bg-body-tertiary rounded"
             style={{ minHeight: "100px" }}
-          >
-            {response}
-          </div>
+            dangerouslySetInnerHTML={{ __html: response }} // Affiche le contenu enrichi
+          ></div>
         )}
       </div>
     </div>
   );
 };
 
-export default Chat;
+export default Chat; 
