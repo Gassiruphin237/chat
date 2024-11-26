@@ -9,12 +9,31 @@ import "prismjs/components/prism-java";
 import "prismjs/components/prism-css";
 import "prismjs/components/prism-markup"; // Pour HTML
 
-
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Fonction pour formater la réponse
+  const formatResponse = (responseText) => {
+    // Remplacer les liens markdown [texte](url) par des balises <a>
+    let formattedText = responseText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    // Remplacer les listes markdown * ou - par des balises <ul><li>
+    formattedText = formattedText.replace(/^\s*[-\*]\s+(.*)$/gm, "<li>$1</li>");
+    formattedText = formattedText.replace(/(<li>.*<\/li>)/g, "<ul>$1</ul>");
+
+    // Remplacer les titres markdown (par exemple, **Titre**) par des balises <strong>
+    formattedText = formattedText.replace(/\*\*([^\*]+)\*\*/g, "<strong>$1</strong>");
+
+    // Remplacer les blocs de code markdown (```) par des balises <pre><code>
+    formattedText = formattedText
+      .replace(/```(\w+)/g, '<pre><code class="language-$1">') // Détecte la langue (e.g., ```javascript)
+      .replace(/```/g, "</code></pre>"); // Remplace les balises de fin de code
+
+    return formattedText;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault(); // Empêche le rechargement de la page
@@ -28,10 +47,8 @@ const Chat = () => {
       });
 
       if (res.status === 200 && res.data && res.data.response) {
-        // Formatage des blocs de code pour Prism.js
-        const formattedResponse = res.data.response
-          .replace(/```(\w+)/g, '<pre><code class="language-$1">') // Détecte la langue (e.g., ```javascript)
-          .replace(/```/g, "</code></pre>"); // Remplace les balises de fin de code
+        // Formater la réponse avant de la stocker
+        const formattedResponse = formatResponse(res.data.response);
         setResponse(formattedResponse); // Stocke la réponse formatée
       } else {
         setError("La réponse de l'API est invalide ou incomplète.");
@@ -93,4 +110,4 @@ const Chat = () => {
   );
 };
 
-export default Chat; 
+export default Chat;
